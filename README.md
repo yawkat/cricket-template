@@ -22,6 +22,8 @@ Normal text
 <span color="red">
     Red text
 
+    <lf/>
+
     <click action="open_url" value="http://cricket.yawk.at">
         Best ticketing plugin
     </click>
@@ -31,6 +33,8 @@ Normal text
     </hover>
 </span>
 ```
+
+Spaces, newlines and tabs are collapsed to a single space. `<lf>` is used to start a new line.
 
 The available event types are `<hover>`, `<click>` and `<click shift="true">`.
 

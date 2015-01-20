@@ -22,7 +22,7 @@
             <version>1.14.8</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>at.yawk.mcomponent</groupId>
             <artifactId>mcomponent</artifactId>
