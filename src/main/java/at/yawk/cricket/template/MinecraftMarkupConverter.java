@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.ToString;
 import org.ccil.cowan.tagsoup.Parser;
@@ -35,12 +36,16 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
         }
     }};
 
-    @Getter private static final MarkupConverter<List<Component>> instance = new MinecraftMarkupConverter();
+    @Getter private static final MinecraftMarkupConverter instance = new MinecraftMarkupConverter();
 
     private MinecraftMarkupConverter() {}
 
     @Override
     public List<Component> convert(String xml) {
+        return convertStream(xml).collect(Collectors.toList());
+    }
+
+    protected Stream<Component> convertStream(String xml) {
         Parser parser = new Parser();
         ComponentConverter converter = new ComponentConverter();
         parser.setContentHandler(converter);
@@ -50,7 +55,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
             throw new RuntimeException(e);
         }
         if (!converter.text) { converter.lines.remove(converter.lines.size() - 1); }
-        return converter.lines.stream().map(n -> n.build(true)).collect(Collectors.toList());
+        return converter.lines.stream().map(n -> n.build(true));
     }
 
     private class ComponentConverter extends DefaultHandler {
