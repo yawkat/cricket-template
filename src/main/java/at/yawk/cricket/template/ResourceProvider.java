@@ -13,6 +13,7 @@ import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -40,20 +41,28 @@ class ResourceProvider {
     private boolean cacheLoaded = false;
 
     public ResourceProvider(Path templateConfigDir, String templateResourceDirectory) {
-        URI uri;
-        try {
-            uri = ResourceProvider.class.getResource(templateResourceDirectory).toURI();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        URL url = ResourceProvider.class.getResource(templateResourceDirectory);
 
-        Path sourceLocal;
-        try {
-            sourceLocal = Paths.get(uri);
-        } catch (FileSystemNotFoundException isZipFs) {
-            String[] components = uri.toString().split("!");
-            String jarPath = components[0];
-            String filePath = components[1];
+        Path sourceLocal = null;
+        if (url != null) {
+            try {
+                sourceLocal = Paths.get(url.toURI());
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            } catch (FileSystemNotFoundException ignored) {}
+        }
+        if (sourceLocal == null) {
+            String jarPath;
+            String filePath;
+            if (url != null) {
+                String[] components = url.toString().split("!");
+                jarPath = components[0];
+                filePath = components[1];
+            } else {
+                jarPath =
+                        "jar:" + ResourceProvider.class.getProtectionDomain().getCodeSource().getLocation().toString();
+                filePath = templateResourceDirectory;
+            }
             try {
                 FileSystem fs = FileSystems.newFileSystem(URI.create(jarPath), new HashMap<>());
                 sourceLocal = fs.getPath(filePath);
@@ -142,7 +151,7 @@ class ResourceProvider {
 
         String parentString = parent.toString();
         String childString = child.toString();
-        if (parentString.endsWith("/")) {
+        if (parentString.endsWith("/") && !parentString.equals("/")) {
             parentString = parentString.substring(0, parentString.length() - 1);
         }
         if (childString.endsWith("/")) {
