@@ -15,6 +15,7 @@ import com.github.jknack.handlebars.io.TemplateSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -74,12 +75,20 @@ public class TemplateManager {
         return resources.computeIfAbsent(from, this::createTemplate);
     }
 
-    public <T> T format(String templateName, MarkupConverter<T> converter, Object args) {
+    public <T> T format(String templateName, MarkupConverter<T> converter, Object... args) {
         Template template = getTemplate(templateName);
         String xml;
         try {
-            Map<String, Object> mappedArgs = mapArgs(args);
-            mappedArgs.put("page", templateName);
+            Map<String, Object> mappedArgs;
+            if (args != null && args.length > 0) {
+                mappedArgs = mapArgs(args[0]);
+                // map additional arguments
+                for (int i = 1; i < args.length; i++) {
+                    mappedArgs.putAll(mapArgs(args[i]));
+                }
+            } else {
+                mappedArgs = Collections.emptyMap();
+            }
             xml = template.apply(mappedArgs);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -87,7 +96,7 @@ public class TemplateManager {
         return converter.convert(xml);
     }
 
-    public String formatXml(String templateName, Object args) {
+    public String formatXml(String templateName, Object... args) {
         return format(templateName, XmlMarkupConverter.getInstance(), args);
     }
 

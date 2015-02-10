@@ -64,7 +64,13 @@ class ResourceProvider {
                 filePath = templateResourceDirectory;
             }
             try {
-                FileSystem fs = FileSystems.newFileSystem(URI.create(jarPath), new HashMap<>());
+                URI uri = URI.create(jarPath);
+                FileSystem fs;
+                try {
+                    fs = FileSystems.getFileSystem(uri);
+                } catch (FileSystemNotFoundException e) {
+                    fs = FileSystems.newFileSystem(uri, new HashMap<>());
+                }
                 sourceLocal = fs.getPath(filePath);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
