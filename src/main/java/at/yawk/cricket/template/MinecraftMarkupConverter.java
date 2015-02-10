@@ -42,9 +42,18 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
         }
     }};
 
-    @Getter private static final MinecraftMarkupConverter instance = new MinecraftMarkupConverter();
+    @Getter private static final MinecraftMarkupConverter instance = new MinecraftMarkupConverter(false);
+    @Getter private static final MinecraftMarkupConverter instanceWithLinefeeds = new MinecraftMarkupConverter(true);
 
-    private MinecraftMarkupConverter() {}
+    /**
+     * If this is true, &lt;lf&gt; is translated to \n (as used in kick packets), otherwise it will cause a new
+     * component to be started.
+     */
+    private final boolean keepLinefeeds;
+
+    private MinecraftMarkupConverter(boolean keepLinefeeds) {
+        this.keepLinefeeds = keepLinefeeds;
+    }
 
     @Override
     public List<Component> convert(String xml) {
@@ -74,14 +83,20 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) {
             if (qName.equals("lf")) {
-                if (!text) {
-                    lines.remove(lines.size() - 1);
+                if (keepLinefeeds) {
+                    characters0(new char[]{ '\n' }, 0, 1, true);
+                    whitespace = true;
+                    return;
+                } else {
+                    if (!text) {
+                        lines.remove(lines.size() - 1);
+                    }
+                    current = root = current.copyStyle();
+                    whitespace = true;
+                    text = false;
+                    lines.add(root);
+                    return;
                 }
-                current = root = current.copyStyle();
-                whitespace = true;
-                text = false;
-                lines.add(root);
-                return;
             }
 
             ComponentNode newNode = new ComponentNode();
@@ -131,10 +146,10 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
 
         @Override
         public void characters(char[] ch, int start, int length) {
-            characters0(ch, start, length);
+            characters0(ch, start, length, false);
         }
 
-        private void characters0(char[] ch, int start, int length) {
+        private void characters0(char[] ch, int start, int length, boolean exact) {
             if (!current.members.isEmpty()) {
                 ComponentNode newNode = new ComponentNode();
                 current.members.add(newNode);
@@ -146,13 +161,15 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
             current.text.ensureCapacity(current.text.length() + length);
             for (int i = 0; i < length; i++) {
                 char c = ch[i + start];
-                if (c == '\n' || c == '\r') {
+                if (!exact && (c == '\n' || c == '\r')) {
                     continue;
                 }
                 if (whitespace) {
                     if (!Character.isWhitespace(c)) {
                         current.text.append(c);
                         whitespace = false;
+                    } else if (exact) {
+                        current.text.append(c);
                     }
                 } else {
                     current.text.append(c);
