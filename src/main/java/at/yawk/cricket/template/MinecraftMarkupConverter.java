@@ -162,7 +162,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
             for (int i = 0; i < length; i++) {
                 char c = ch[i + start];
                 if (!exact && (c == '\n' || c == '\r')) {
-                    continue;
+                    c = ' ';
                 }
                 if (whitespace) {
                     if (!Character.isWhitespace(c)) {
