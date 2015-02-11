@@ -21,11 +21,24 @@ public class Serializer {
     private final Map<Class<?>, CustomSerializer<?>> specials = new HashMap<>();
     private final Map<Class<?>, CustomSerializer<?>> cache = new ConcurrentHashMap<>();
 
+    private static final CustomSerializer<Number> NUMBER = (n, s) -> {
+        if (n.longValue() == n.doubleValue()) {
+            return n.longValue();
+        } else {
+            return n;
+        }
+    };
+
     @SuppressWarnings({ "unchecked", "Convert2MethodRef" })
     public Serializer() {
         special(String.class, CustomSerializer.IDENTITY);
-        Primitives.allPrimitiveTypes().forEach(pr -> special(pr, CustomSerializer.IDENTITY));
-        Primitives.allWrapperTypes().forEach(pr -> special(pr, CustomSerializer.IDENTITY));
+        Primitives.allWrapperTypes().forEach(pr -> {
+            if (Number.class.isAssignableFrom(pr)) {
+                special(pr, (CustomSerializer) NUMBER);
+            } else {
+                special(pr, CustomSerializer.IDENTITY);
+            }
+        });
 
         special(URL.class, CustomSerializer.TO_STRING);
         special(UUID.class, CustomSerializer.TO_STRING);

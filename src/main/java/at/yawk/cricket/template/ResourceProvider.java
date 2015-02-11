@@ -213,7 +213,7 @@ class ResourceProvider {
                             properties.forEach((k, v) -> stringCache.put(prefix + k, String.valueOf(v)));
                         } else if (extension.equalsIgnoreCase("html")) {
                             String name = prefix + fileName.substring(0, fileName.lastIndexOf('.'));
-                            stringCache.put(name, new String(data, StandardCharsets.UTF_8));
+                            stringCache.put(name, new String(data, StandardCharsets.UTF_8).trim());
                         }
                     });
         } finally {
