@@ -7,6 +7,7 @@
 package at.yawk.cricket.template;
 
 import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Helper;
 import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.helper.StringHelpers;
 import com.github.jknack.handlebars.io.AbstractTemplateLoader;
@@ -55,6 +56,10 @@ public class TemplateManager {
         });
         handlebars.registerHelper("readableIndex", ReadableIndexHelper.getInstance());
         handlebars.registerHelpers(StringHelpers.class);
+    }
+
+    public void registerHelper(String name, Helper<?> helper) {
+        handlebars.registerHelper(name, helper);
     }
 
     /**
