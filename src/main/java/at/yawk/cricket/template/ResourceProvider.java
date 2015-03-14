@@ -211,7 +211,8 @@ class ResourceProvider {
                                 throw new UncheckedIOException(e);
                             }
                             properties.forEach((k, v) -> stringCache.put(prefix + k, String.valueOf(v)));
-                        } else if (extension.equalsIgnoreCase("html")) {
+                        } else if (extension.equalsIgnoreCase("html") ||
+                                   extension.equalsIgnoreCase("hbs")) {
                             String name = prefix + fileName.substring(0, fileName.lastIndexOf('.'));
                             stringCache.put(name, new String(data, StandardCharsets.UTF_8).trim());
                         }
