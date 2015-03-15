@@ -6,10 +6,7 @@
 
 package at.yawk.cricket.template;
 
-import at.yawk.mcomponent.BaseComponent;
-import at.yawk.mcomponent.Component;
-import at.yawk.mcomponent.StringComponent;
-import at.yawk.mcomponent.StringComponentValue;
+import at.yawk.mcomponent.*;
 import at.yawk.mcomponent.action.BaseAction;
 import at.yawk.mcomponent.action.BaseEvent;
 import at.yawk.mcomponent.action.Event;
@@ -139,9 +136,10 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
                 return;
             }
 
-            do {
+            while (current.fromText) {
                 current = current.parent;
-            } while (current.fromText);
+            }
+            current = current.parent;
         }
 
         @Override
@@ -202,7 +200,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
                     return new StringComponent(text.toString());
                 }
             }
-            return new BaseComponent(
+            BaseComponent component = new BaseComponent(
                     new StringComponentValue(text.toString()),
                     members.stream()
                             .map(m -> m.build(false))
@@ -211,6 +209,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
                     style,
                     events
             );
+            return ComponentMinimizer.minimizeOne(component);
         }
 
         ComponentNode copyStyle() {
