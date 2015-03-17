@@ -96,6 +96,10 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
                 }
             }
 
+            while (current.fromText) {
+                current = current.parent;
+            }
+
             ComponentNode newNode = new ComponentNode();
             current.members.add(newNode);
             newNode.parent = current;
