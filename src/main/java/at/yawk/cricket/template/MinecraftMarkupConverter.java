@@ -103,6 +103,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
             ComponentNode newNode = new ComponentNode();
             current.members.add(newNode);
             newNode.parent = current;
+            newNode.translateUrls = current.translateUrls;
             current = newNode;
 
             if (qName.equals("hover")) {
@@ -113,6 +114,8 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
                 } else {
                     current.events.add(new BaseEvent(BaseEvent.Type.CLICK, parseAction(attributes, false)));
                 }
+            } else if (qName.equals("translateUrls")) {
+                current.translateUrls = true;
             }
 
             Color color = COLOR_BY_NAME.get(attributes.getValue("color"));
@@ -157,6 +160,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
                 current.members.add(newNode);
                 newNode.parent = current;
                 newNode.fromText = true;
+                newNode.translateUrls = current.translateUrls;
                 current = newNode;
             }
 
@@ -190,6 +194,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
         List<ComponentNode> members = new ArrayList<>();
         Set<Event> events = new HashSet<>();
         boolean fromText;
+        boolean translateUrls = false;
 
         private boolean empty() {
             return text.length() <= 0 && members.isEmpty() && events.isEmpty();
@@ -200,14 +205,27 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
                 if (empty()) {
                     return null;
                 }
-                if (members.isEmpty() && events.isEmpty() && style.equals(Style.INHERIT)) {
+                if (members.isEmpty() &&
+                    events.isEmpty() &&
+                    style.equals(Style.INHERIT) &&
+                    !translateUrls) {
                     return new StringComponent(text.toString());
                 }
             }
+            Stream<Component> components = members.stream().map(m -> m.build(false));
+            ComponentValue value;
+            if (translateUrls) {
+                value = ComponentValue.EMPTY;
+                components = Stream.concat(
+                        Stream.of(LegacyConverter.convertUrls(text)),
+                        components
+                );
+            } else {
+                value = new StringComponentValue(text.toString());
+            }
             BaseComponent component = new BaseComponent(
-                    new StringComponentValue(text.toString()),
-                    members.stream()
-                            .map(m -> m.build(false))
+                    value,
+                    components
                             .filter(m -> m != null)
                             .collect(Collectors.toList()),
                     style,
@@ -225,6 +243,7 @@ public class MinecraftMarkupConverter implements MarkupConverter<List<Component>
             node.style = this.style;
             node.events.addAll(this.events);
             node.parent = p;
+            node.translateUrls = this.translateUrls;
             return node;
         }
     }
