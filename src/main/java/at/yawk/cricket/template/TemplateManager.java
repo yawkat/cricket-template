@@ -6,6 +6,8 @@
 
 package at.yawk.cricket.template;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Helper;
 import com.github.jknack.handlebars.Template;
@@ -33,7 +35,7 @@ public class TemplateManager {
 
     private final Map<String, Template> resources = new ConcurrentHashMap<>();
 
-    @Getter private final Serializer serializer = new Serializer();
+    @Getter private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TemplateManager(Path templateConfigDir) {
         this(templateConfigDir, ResourceProvider.DEFAULT_TEMPLATE_RESOURCE_DIR);
@@ -84,15 +86,14 @@ public class TemplateManager {
         Template template = getTemplate(templateName);
         String xml;
         try {
-            Map<String, Object> mappedArgs;
-            if (args != null && args.length > 0) {
-                mappedArgs = mapArgs(args[0]);
-                // map additional arguments
-                for (int i = 1; i < args.length; i++) {
-                    mappedArgs.putAll(mapArgs(args[i]));
+            Map<Object, Object> mappedArgs = new HashMap<>();
+            if (args != null) {
+                for (Object arg : args) {
+                    try (TokenBuffer buffer = new TokenBuffer(getObjectMapper(), false)) {
+                        objectMapper.writeValue(buffer, arg);
+                        mappedArgs.putAll(objectMapper.readValue(buffer.asParser(), Map.class));
+                    }
                 }
-            } else {
-                mappedArgs = Collections.emptyMap();
             }
             xml = template.apply(mappedArgs);
         } catch (IOException e) {
@@ -105,11 +106,4 @@ public class TemplateManager {
         return format(templateName, XmlMarkupConverter.getInstance(), args);
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> mapArgs(Object args) {
-        Object s = serializer.serialize(args);
-        log.debug("Serialized {} -> {}", args, s);
-        // let's hope for the best!
-        return s == null ? new HashMap<>() : (Map<String, Object>) s;
-    }
 }
