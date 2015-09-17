@@ -38,19 +38,7 @@ public class TemplateManager {
 
     public TemplateManager(Path templateConfigDir, String templateResourceDirectory) {
         ResourceProvider resourceProvider = new ResourceProvider(templateConfigDir, templateResourceDirectory);
-        handlebars = new Handlebars(new AbstractTemplateLoader() {
-            @Override
-            public TemplateSource sourceAt(String location) throws IOException {
-                resourceProvider.loadCacheAndStoreDefaults();
-                try {
-                    String string = resourceProvider.getString(location);
-                    return new StringTemplateSource(location, string);
-                } catch (NoSuchElementException e) {
-                    // rethrow as IO so handlebars can decide what to do
-                    throw new IOException(e);
-                }
-            }
-        });
+        handlebars = new Handlebars(new TemplateLoaderImpl(resourceProvider));
         handlebars.registerHelper("readableIndex", ReadableIndexHelper.getInstance());
         handlebars.registerHelpers(StringHelpers.class);
     }
