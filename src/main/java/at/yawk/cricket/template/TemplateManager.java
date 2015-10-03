@@ -18,7 +18,6 @@ import com.github.jknack.handlebars.io.TemplateSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -35,7 +34,7 @@ public class TemplateManager {
 
     private final Map<String, Template> resources = new ConcurrentHashMap<>();
 
-    @Getter private final ObjectMapper objectMapper = new ObjectMapper();
+    @Getter private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     public TemplateManager(Path templateConfigDir) {
         this(templateConfigDir, ResourceProvider.DEFAULT_TEMPLATE_RESOURCE_DIR);
@@ -57,6 +56,7 @@ public class TemplateManager {
             }
         });
         handlebars.registerHelper("readableIndex", ReadableIndexHelper.getInstance());
+        handlebars.registerHelper("time", TimeFormatHelper.getInstance());
         handlebars.registerHelpers(StringHelpers.class);
     }
 
