@@ -42,6 +42,10 @@ class TimeFormatHelper implements Helper<String> {
 
     @Override
     public CharSequence apply(String context, Options options) throws IOException {
+        if (context == null) {
+            return null;
+        }
+
         ZonedDateTime dateTime = null;
         for (Function<String, ZonedDateTime> inputFormatter : INPUT_FORMATTERS) {
             try {

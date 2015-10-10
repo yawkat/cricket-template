@@ -8,6 +8,7 @@ package at.yawk.cricket.template;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Helper;
 import com.github.jknack.handlebars.Template;
@@ -34,13 +35,16 @@ public class TemplateManager {
 
     private final Map<String, Template> resources = new ConcurrentHashMap<>();
 
-    @Getter private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    @Getter private final ObjectMapper objectMapper;
 
     public TemplateManager(Path templateConfigDir) {
         this(templateConfigDir, ResourceProvider.DEFAULT_TEMPLATE_RESOURCE_DIR);
     }
 
     public TemplateManager(Path templateConfigDir, String templateResourceDirectory) {
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
         ResourceProvider resourceProvider = new ResourceProvider(templateConfigDir, templateResourceDirectory);
         handlebars = new Handlebars(new AbstractTemplateLoader() {
             @Override
