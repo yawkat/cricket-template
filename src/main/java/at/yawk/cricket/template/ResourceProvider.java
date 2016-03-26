@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -40,7 +41,8 @@ class ResourceProvider {
     private final ReadWriteLock cacheLock = new ReentrantReadWriteLock();
     private boolean cacheLoaded = false;
 
-    public ResourceProvider(Path templateConfigDir, String templateResourceDirectory) {
+    @SneakyThrows(URISyntaxException.class)
+    ResourceProvider(Path templateConfigDir, String templateResourceDirectory, Class<?> contextClass) {
         URL url = ResourceProvider.class.getResource(templateResourceDirectory);
 
         Path sourceLocal = null;
@@ -52,33 +54,40 @@ class ResourceProvider {
             } catch (FileSystemNotFoundException ignored) {}
         }
         if (sourceLocal == null) {
-            String jarPath;
-            String filePath;
             if (url != null) {
                 String[] components = url.toString().split("!");
-                jarPath = components[0];
-                filePath = components[1];
+                sourceLocal = getZipPath(components[0], components[1]);
             } else {
-                jarPath =
-                        "jar:" + ResourceProvider.class.getProtectionDomain().getCodeSource().getLocation().toString();
-                filePath = templateResourceDirectory;
-            }
-            try {
-                URI uri = URI.create(jarPath);
-                FileSystem fs;
-                try {
-                    fs = FileSystems.getFileSystem(uri);
-                } catch (FileSystemNotFoundException e) {
-                    fs = FileSystems.newFileSystem(uri, new HashMap<>());
+                URL location = contextClass.getProtectionDomain().getCodeSource().getLocation();
+                Path path = Paths.get(location.toURI());
+                if (Files.isDirectory(path)) {
+                    sourceLocal = path.resolve(templateResourceDirectory);
+                } else {
+                    String basePath = "jar:" + location;
+                    sourceLocal = getZipPath(basePath, templateResourceDirectory);
                 }
-                sourceLocal = fs.getPath(filePath);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
             }
         }
         this.source = sourceLocal;
 
         config = templateConfigDir;
+    }
+
+    private static Path getZipPath(String zipPath, String filePath) {
+        Path sourceLocal;
+        try {
+            URI uri = URI.create(zipPath);
+            FileSystem fs;
+            try {
+                fs = FileSystems.getFileSystem(uri);
+            } catch (FileSystemNotFoundException e) {
+                fs = FileSystems.newFileSystem(uri, new HashMap<>());
+            }
+            sourceLocal = fs.getPath(filePath);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return sourceLocal;
     }
 
     public void loadCacheAndStoreDefaults() {
@@ -98,32 +107,31 @@ class ResourceProvider {
     }
 
     public void storeDefaults() throws IOException {
-        Files.walk(source)
-                .forEach(child -> {
-                    try {
-                        Path inConfig = config.resolve(relativize(source, child, config.getFileSystem()));
-                        if (Files.isDirectory(child)) {
-                            Files.createDirectories(inConfig);
-                            return;
-                        }
-                        if (child.toString().endsWith(".class")) {
-                            return;
-                        }
-                        Path orig = inConfig.resolveSibling(inConfig.getFileName().toString() + ".orig");
-                        if (Files.exists(inConfig)) {
-                            boolean unmodified = contentsEqual(child, inConfig);
-                            if (!unmodified && Files.exists(orig)) {
-                                unmodified = contentsEqual(orig, inConfig);
-                            }
-                            if (unmodified) {
-                                Files.delete(inConfig);
-                            }
-                        }
-                        Files.copy(child, orig, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
+        Files.walk(source).forEach(child -> {
+            try {
+                Path inConfig = config.resolve(relativize(source, child, config.getFileSystem()));
+                if (Files.isDirectory(child)) {
+                    Files.createDirectories(inConfig);
+                    return;
+                }
+                if (child.toString().endsWith(".class")) {
+                    return;
+                }
+                Path orig = inConfig.resolveSibling(inConfig.getFileName().toString() + ".orig");
+                if (Files.exists(inConfig)) {
+                    boolean unmodified = contentsEqual(child, inConfig);
+                    if (!unmodified && Files.exists(orig)) {
+                        unmodified = contentsEqual(orig, inConfig);
                     }
-                });
+                    if (unmodified) {
+                        Files.delete(inConfig);
+                    }
+                }
+                Files.copy(child, orig, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     private static boolean contentsEqual(Path a, Path b) throws IOException {
@@ -166,6 +174,10 @@ class ResourceProvider {
 
         parent = parent.getFileSystem().getPath(parentString);
         child = child.getFileSystem().getPath(childString);
+
+        if (parent.isAbsolute()) { child = child.toAbsolutePath(); }
+        if (child.isAbsolute()) { parent = parent.toAbsolutePath(); }
+
         Path relative = parent.relativize(child);
 
         String root = relative.getName(0).toString();

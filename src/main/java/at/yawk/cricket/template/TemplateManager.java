@@ -42,10 +42,16 @@ public class TemplateManager {
     }
 
     public TemplateManager(Path templateConfigDir, String templateResourceDirectory) {
+        this(templateConfigDir, templateResourceDirectory, TemplateManager.class);
+    }
+
+    public TemplateManager(Path templateConfigDir, String templateResourceDirectory, Class<?> contextClass) {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
-        ResourceProvider resourceProvider = new ResourceProvider(templateConfigDir, templateResourceDirectory);
+        ResourceProvider resourceProvider = new ResourceProvider(templateConfigDir,
+                                                                 templateResourceDirectory,
+                                                                 contextClass);
         handlebars = new Handlebars(new AbstractTemplateLoader() {
             @Override
             public TemplateSource sourceAt(String location) throws IOException {
