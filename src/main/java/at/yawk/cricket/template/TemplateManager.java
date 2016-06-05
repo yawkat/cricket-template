@@ -7,6 +7,7 @@
 package at.yawk.cricket.template;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.jknack.handlebars.Handlebars;
@@ -47,6 +48,7 @@ public class TemplateManager {
 
     public TemplateManager(Path templateConfigDir, String templateResourceDirectory, Class<?> contextClass) {
         objectMapper = new ObjectMapper();
+        objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectMapper.registerModule(new JavaTimeModule());
 
         ResourceProvider resourceProvider = new ResourceProvider(templateConfigDir,
