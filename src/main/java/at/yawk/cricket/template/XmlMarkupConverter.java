@@ -9,7 +9,7 @@ package at.yawk.cricket.template;
 import lombok.Getter;
 
 /**
- * Identity markup converter (xml -> xml). Used when the template manager should just fill in the templated values but
+ * Identity markup converter (xml -&gt; xml). Used when the template manager should just fill in the templated values but
  * not convert the document in any way, for example for further use.
  *
  * @author yawkat
